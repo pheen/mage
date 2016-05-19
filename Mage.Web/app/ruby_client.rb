@@ -1,5 +1,3 @@
-require 'java'
-require 'pry'
 require '../mage-web-client.jar'
 
 import 'mage.web.Client'
