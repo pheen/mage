@@ -58,6 +58,10 @@ public class Client implements MageClient {
         this.container = new ScriptingContainer();
     }
 
+    public Session getSession() {
+        return session;
+    }
+
     public void connect() {
         session = new SessionImpl(this);
         Connection connection = new Connection();

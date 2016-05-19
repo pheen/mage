@@ -1,0 +1,164 @@
+require 'listen'
+require 'pry'
+
+# Dir['./lib/*'].each { |file| require file }
+# Dir['./app/models/*'].each { |file| require file }
+
+# desc 'magic console'
+# task :console do
+  # byebug
+# end
+
+namespace :assets do
+  desc 'automagically compiles assets on save'
+  task :listen do
+    Compilers::Main.listen
+  end
+
+  desc 'automagically compiles all assets'
+  task :compile do
+    Compilers::Main.compile_all
+  end
+
+  namespace :compile do
+    desc 'compile for deployment'
+    task :compress do
+      Compilers::Main.compile_all(compression: true)
+    end
+  end
+
+  # desc 'destroyer of assets'
+  # task :destroy do
+  #   `rm -rf build`
+  #   puts 'Assets destroyed.'
+  # end
+end
+
+module Compilers
+  BuildDir = 'public'
+  AssetDir = 'assets'
+
+  class Main
+    class << self
+      def listen
+        new.listen
+      end
+
+      def compile_all(opts = {})
+        new(opts).compile_all
+      end
+    end
+
+    def initialize(opts = {})
+      @compression = opts.fetch(:compression, false)
+    end
+
+    def listen
+      puts "Listening to #{AssetDir}..."
+
+      listener = Listen.to(AssetDir) do |modified, added, removed|
+        file_paths = modified | added | removed
+
+        file_paths.each do |file_path|
+          ListenCompiler.new(file_path).call
+        end
+      end
+
+      listener.start # not blocking
+      sleep
+    end
+
+    def compile_all
+      MultiFileCompiler.new.call
+    end
+  end
+
+  ListenCompiler = Struct.new(:file_path) do
+    def call
+      puts "Compiling... #{file_path}"
+
+      result = compile
+
+      puts "Compiled #{file_path}"
+      puts "Saving... #{save_path}"
+
+      File.open(save_path, 'w') { |file| file.write(result) }
+
+      puts "Saved #{save_path}"
+
+      # if ext == '.scss'
+      #   File.open("#{BuildDir}/stylesheets/login.css", 'w') { |file| file.write(`scss #{AssetDir}/stylesheets/login.css.scss`) }
+      #   File.open("#{BuildDir}/stylesheets/main.css", 'w') { |file| file.write(`scss #{AssetDir}/stylesheets/main.css.scss`) }
+      # end
+    end
+
+  private
+
+    def compile
+      case extension
+      when '.coffee'
+        `cpp #{file_path} | coffee -s -p`
+      when '.scss'
+        `scss #{file_path}`
+      end
+    end
+
+    def save_path
+      file_path.sub(AssetDir, BuildDir).sub(extension, '')
+    end
+
+    def extension
+      File.extname(file_path)
+    end
+  end
+
+  class MultiFileCompiler
+    def call
+      create_directories
+
+      puts 'Brewing coffee..'
+      compile_coffeescript
+
+      puts 'Struggling to open the blinds..'
+      compile_scss
+    end
+
+  private
+
+    def create_directories
+      Dir["#{AssetDir}/**/"].each do |dir|
+        dest = dir.sub(/^#{AssetDir}\//, '').chop
+        next if dest.empty?
+
+        `mkdir -p #{BuildDir}/#{dest}`
+      end
+    end
+
+    def compile_coffeescript
+      compile('.coffee') do |file_path|
+        if @compression
+          `cpp #{file_path} | coffee -s -p | uglifyjs`
+        else
+          `cpp #{file_path} | coffee -s -p`
+        end
+      end
+    end
+
+    def compile_scss
+      compile('.scss') do |file_path|
+        next if file_path =~ /\/_/
+        `scss #{file_path}`
+      end
+    end
+
+    def compile(ext)
+      Dir["#{AssetDir}/**/*#{ext}"].each do |file_path|
+        dest = file_path.sub(AssetDir, BuildDir).sub(ext, '')
+        result = yield(file_path) or next
+
+        File.open(dest, 'w') { |file| file.write(result) }
+        puts "created: #{dest}"
+      end
+    end
+  end
+end
