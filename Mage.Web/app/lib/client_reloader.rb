@@ -13,14 +13,14 @@ class ClientReloader
   end
 
   def run
-    @last_modified_known ||= File.mtime(FileName).to_i
-    last_modified = File.mtime(FileName).to_i
+    @mtime      ||= File.mtime(FileName).to_i
+    current_mtime = File.mtime(FileName).to_i
 
-    if @last_modified_known < last_modified
+    if @mtime < current_mtime
       warn 'Reloading RubyClient'
-
       load FileName
-      @last_modified_known = last_modified
+
+      @mtime = current_mtime
     end
   rescue Exception
     warn "autoreload failed unexpectedly: #{$!}"

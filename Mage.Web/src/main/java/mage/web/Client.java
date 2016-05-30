@@ -27,6 +27,7 @@
  */
 package mage.web;
 
+import org.apache.log4j.Logger;
 import mage.interfaces.MageClient;
 import mage.interfaces.callback.ClientCallback;
 import mage.remote.Connection;
@@ -62,7 +63,7 @@ public class Client implements MageClient {
         return session;
     }
 
-    public void connect() {
+    public boolean connect() {
         session = new SessionImpl(this);
         Connection connection = new Connection();
 
@@ -71,7 +72,7 @@ public class Client implements MageClient {
         connection.setPort(17171);
         connection.setProxyType(Connection.ProxyType.NONE);
 
-        session.connect(connection);
+        return session.connect(connection);
     }
 
     @Override
