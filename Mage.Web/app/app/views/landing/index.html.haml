@@ -1,0 +1,8 @@
+:javascript
+  var elm = Elm.Main.fullscreen();
+
+  App.matches = App.cable.subscriptions.create('MatchChannel', {
+    received: function(action) {
+      elm.ports.match.send(action)
+    }
+  });

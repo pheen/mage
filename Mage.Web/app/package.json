@@ -1,0 +1,15 @@
+{
+  "name": "RubyMage",
+  "version": "0.0.1",
+  "description": "An XMage web client",
+  "dependencies": {
+    "elm": "0.17.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/pheen/ruby_mage.git"
+  },
+  "author": "Joel Korpela",
+  "license": "UNLICENSED",
+  "homepage": "http://github.com/pheen/ruby_mage"
+}
